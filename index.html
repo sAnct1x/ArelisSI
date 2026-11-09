@@ -1414,12 +1414,15 @@ function spawnTwig(rand, parent, tPos, depth, colorIdx, angleMul, lenMul){
   ang += side * angleMul * (0.55 + rand()*0.6);
   /* twigs reach up and out like the parent limb, never droop down:
      a downward angle is mirrored up so the canopy keeps flowing */
-  if(Math.sin(ang) > 0.22) ang = -ang * 0.85;
+  if(Math.sin(ang) > 0.12) ang = -ang * 0.85;
   var len = parent.len * lenMul * (0.75 + rand()*0.5);
   /* portrait twigs run a little shorter: the canopy is narrower, so
      full-length twigs from neighbouring limbs pile into one cluster */
   if(portraitNow()) len *= 0.8;
-  var end = [ start[0] + Math.cos(ang)*len, start[1] + Math.sin(ang)*len - len*0.18 ];
+  /* twig ends curl upward, not out or down: the lift is a real
+     share of the twig's length, so the rim reads as curling tips
+     instead of a flat fan with drooping edges */
+  var end = [ start[0] + Math.cos(ang)*len, start[1] + Math.sin(ang)*len - len*0.28 ];
   /* no twig may leave the frame: tendrils curl inside the picture,
      so the whole tree, top included, is always in view. Near the
      top the end is NOT clamped onto one shared line: a hard clamp
@@ -1441,8 +1444,11 @@ function spawnTwig(rand, parent, tPos, depth, colorIdx, angleMul, lenMul){
     end[0] = Math.max(W*0.03, Math.min(W*0.97, end[0]));
     end[1] = Math.min(H*0.60, end[1]);
   } else {
-    end[0] = Math.max(W*0.07, Math.min(W*0.93, end[0]));
-    end[1] = Math.min(H*0.90, end[1]);
+    end[0] = Math.max(W*0.10, Math.min(W*0.90, end[0]));
+    /* the canopy band ends well above the trunk's stretch: a twig
+       may not droop down toward the ground, or the rim sags into
+       a flat fan instead of curling up like a goblet */
+    end[1] = Math.min(H*0.62, end[1]);
   }
   var mx = (start[0]+end[0])/2, my = (start[1]+end[1])/2;
   var bow = len * 0.34 * (rand() < 0.5 ? -1 : 1);
@@ -1481,7 +1487,7 @@ function buildGeometry(){
     var ep = effPos(s);
     var p3 = [ ep.x*W, ep.y*H ];
     var dx = p3[0]-p0[0], dy = p3[1]-p0[1], len = Math.hypot(dx,dy) || 1;
-    var sc = smoothControls(p0, p3, s.startT, len, 0.21);
+    var sc = smoothControls(p0, p3, s.startT, len, 0.27);
     var br = addBranch(rand, p0, sc[0], sc[1], p3, 0, i);
     br.startT = s.startT;
     mains.push(br);
@@ -1525,23 +1531,28 @@ function buildGeometry(){
     if(di === decoCount-1) dSide = 0;
     var dStartT = 0.60 + ((di*37) % 40)/100;
     var dp0 = trunkCenter(dStartT);
-    var dReach = 0.20 + ((di*53) % 30)/100;
+    var dReach = 0.16 + ((di*53) % 24)/100;
     var dEx = dSide === 0 ? 0.50 + (((di*29) % 17) - 8)/100 : 0.50 + dSide*dReach*(portraitNow() ? 0.92 : 1.0);
     /* decorative tips keep a clear margin under the top of the
        frame too: the highest of them ends at 0.155 of the height,
        so no limb tip crowds the edge or lines up with the folded
        twig tips into a flat top */
     var dEy = 0.155 + ((di*41) % 30)/100;
+    /* goblet envelope: the canopy is widest across the upper third
+       and curves back in at the sides, so a tip that sits lower is
+       pulled toward the middle instead of flaring out to the rim */
+    var halfW = 0.40 - Math.max(0, dEy - 0.22) * 0.55;
+    dEx = Math.max(0.5 - halfW, Math.min(0.5 + halfW, dEx));
     if(portraitNow()){
       /* decorative tips fan across the same lowered, widened
          canopy band as the labelled tips, not the old top band */
       dEy = 0.17 + ((di*41) % 33)/100;
       dEx = Math.max(0.05, Math.min(0.95, dEx)); dEy = Math.max(0.15, Math.min(0.52, dEy));
     }
-    else { dEx = Math.max(0.08, Math.min(0.92, dEx)); dEy = Math.max(0.155, Math.min(0.50, dEy)); }
+    else { dEx = Math.max(0.10, Math.min(0.90, dEx)); dEy = Math.max(0.155, Math.min(0.50, dEy)); }
     var dp3 = [ dEx*W, dEy*H ];
     var ddx = dp3[0]-dp0[0], ddy = dp3[1]-dp0[1], dlen = Math.hypot(ddx,ddy) || 1;
-    var dsc = smoothControls(dp0, dp3, dStartT, dlen, 0.20);
+    var dsc = smoothControls(dp0, dp3, dStartT, dlen, 0.26);
     var dbr = addBranch(rand, dp0, dsc[0], dsc[1], dp3, di % 3 === 2 ? 1 : 0, (di+2) % 6);
     dbr.startT = dStartT;
     if(dbr.depth === 0){
@@ -1590,7 +1601,7 @@ function buildGeometry(){
        full phone width from the higher base instead of bunching
        under the trunk */
     var tier = r % 3;
-    var reach = tier === 0 ? (0.24 + rand()*0.14) : tier === 1 ? (0.14 + rand()*0.10) : (0.06 + rand()*0.08);
+    var reach = tier === 0 ? (0.19 + rand()*0.10) : tier === 1 ? (0.14 + rand()*0.10) : (0.06 + rand()*0.08);
     var spread = sideSign * (portraitNow() ? reach * 1.18 : reach);
     var p0 = [ base[0] + (rand()-0.5)*14, base[1] + 1 + rand()*3 ];
     var end = [ base[0] + spread*W, base[1] - 1 + rand()*8 ];
@@ -1637,14 +1648,14 @@ function buildGeometry(){
   /* the trunk is a braid, not a pole: many thin filaments twisting
      hard around each other, thick at the roots, converging at the top */
   /* the trunk carries far more filaments than any branch bundle
-     (44 against a main limb's 13), which is what makes it read as
+     (58 against a main limb's 13), which is what makes it read as
      the trunk: thick, dense and calm, and still clearly the
      thickest thing in the tree by a wide margin */
-  for(var k=0;k<44;k++){
+  for(var k=0;k<58;k++){
     trunkStrands.push({
-      phase: (k/44)*6.283 + rand()*0.5,
-      tw: 11 + rand()*4.5,
-      width: 0.55 + rand()*0.75,
+      phase: (k/58)*6.283 + rand()*0.5,
+      tw: 14 + rand()*5,
+      width: 0.65 + rand()*0.85,
       alpha: 0.19 + rand()*0.28,
       colorIdx: [0,2,5,4,2,0,5,2][k % 8],
       white: k === 11 || k === 29 || k === 37
